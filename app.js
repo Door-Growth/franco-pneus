@@ -258,7 +258,11 @@ const fitmentResultHeading = document.querySelector("#fitment-result-heading");
 const fitmentProductList = document.querySelector("#fitment-product-list");
 const fitmentStatus = document.querySelector("#fitment-status");
 const fitmentFallback = document.querySelector("#fitment-manual-contact");
+const fitmentSubmitButton = fitmentForm?.querySelector('button[type="submit"]');
 
+function safeSourceUrl(value) {
+  try { const url = new URL(value); return url.protocol === "https:" ? url.href : "#"; } catch { return "#"; }
+}
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
 }
@@ -266,48 +270,149 @@ function fillSelect(select, placeholder, values) {
   select.innerHTML = `<option value="">${placeholder}</option>${values.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("")}`;
   select.disabled = values.length === 0;
 }
-function selectedFitments() {
-  return vehicleFitments.filter(item => item.make === fitmentMake.value && item.model === fitmentModel.value && String(item.year) === fitmentYear.value);
+
+const catalogMakes = ["AGRALE","ALFA ROMEO","ASIA","ASTON MARTIN","AUDI","BENTLEY","BMW","BYD","CADILLAC","CAOA CHANGAN","CAOA CHERY","CAOA EXEED","CHERY","CHEVROLET","CHRYSLER","CITROEN","CROSS LANDER","DAEWOO","DAIHATSU","DENZA","DODGE","DONGFENG","DS","FERRARI","FIAT","FORD","GAC","GEELY","GREAT WALL","HONDA","HYUNDAI","IVECO","JAC","JAECOO","JAGUAR","JEEP","JETOUR","KIA","LAMBORGHINI","LAND ROVER","LEAPMOTOR","LEXUS","LIFAN","MAHINDRA","MASERATI","MAZDA","MCLAREN","MERCEDES","MG","MINI","MITSUBISHI","NETA","NISSAN","OMODA","PEUGEOT","PORSCHE","RAM","RENAULT","RIDDARA","ROLLS ROYCE","SEAT","SERES","SSANGYONG","SUBARU","SUZUKI","TAC","TOYOTA","TROLLER","VOLKSWAGEN","VOLVO","ZEEKR"];
+let fitmentCatalogIndex = null;
+let fitmentCatalogRecords = new Map();
+let fitmentRequestId = 0;
+let currentFitmentEntries = [];
+
+async function fetchGzipJson(path) {
+  const response = await fetch(path, { cache: "force-cache" });
+  if (!response.ok) throw new Error("Não foi possível carregar a base de medidas.");
+  if (!("DecompressionStream" in window)) throw new Error("Este navegador não suporta a leitura compactada da base.");
+  const stream = new Blob([await response.arrayBuffer()]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return JSON.parse(await new Response(stream).text());
 }
-function refreshFitmentModels() {
-  const models = [...new Set(vehicleFitments.filter(item => item.make === fitmentMake.value).map(item => item.model))].sort((a, b) => a.localeCompare(b, "pt-BR"));
-  fillSelect(fitmentModel, "Selecione o modelo", models);
-  fillSelect(fitmentYear, "Selecione o ano", []);
-  fitmentVersionWrap.hidden = true;
-  fitmentVersion.disabled = true;
+async function loadFitmentCatalogIndex() {
+  if (fitmentCatalogIndex) return fitmentCatalogIndex;
+  fitmentCatalogIndex = await fetchGzipJson("./data/vehicle-catalog-index.json.gz?v=20261002-1");
+  return fitmentCatalogIndex;
+}
+async function loadFitmentCatalogMake(make) {
+  if (fitmentCatalogRecords.has(make)) return fitmentCatalogRecords.get(make);
+  const index = await loadFitmentCatalogIndex();
+  const brand = index.brands[make];
+  if (!brand) return [];
+  const rows = await fetchGzipJson(`./data/vehicle-catalog/${brand.file}?v=20261002-1`);
+  const entries = rows.map(row => ({
+    make,
+    model: row.m,
+    year: row.y,
+    version: row.v,
+    size: row.f,
+    rearSize: row.r || "",
+    fitmentType: row.c ? "original" : "catalog-reference",
+    sourceLabel: row.s,
+    sourceUrl: row.u,
+  }));
+  fitmentCatalogRecords.set(make, entries);
+  return entries;
+}
+function selectedFitments() {
+  return currentFitmentEntries;
+}
+function resetFitmentResults() {
   fitmentResults.hidden = true;
   fitmentStatus.textContent = "";
+  currentFitmentEntries = [];
+  fillSelect(fitmentVersion, "Escolha a versão ou o aro", []);
+  fitmentVersionWrap.hidden = true;
+  if (fitmentSubmitButton) fitmentSubmitButton.disabled = true;
+}
+async function refreshFitmentModels() {
+  const requestId = ++fitmentRequestId;
+  const make = fitmentMake.value;
+  resetFitmentResults();
+  fillSelect(fitmentModel, "Carregando modelos…", []);
+  fillSelect(fitmentYear, "Selecione o ano", []);
+  if (!make) {
+    fillSelect(fitmentModel, "Selecione o modelo", []);
+    return;
+  }
+  fitmentStatus.textContent = "Carregando modelos…";
+  try {
+    const index = await loadFitmentCatalogIndex();
+    if (requestId !== fitmentRequestId || make !== fitmentMake.value) return;
+    const catalogModels = (index.brands[make]?.models || []).map(item => item.name);
+    const savedModels = vehicleFitments.filter(item => item.make === make).map(item => item.model);
+    const models = [...new Set([...catalogModels, ...savedModels])].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    fillSelect(fitmentModel, "Selecione o modelo", models);
+    fitmentStatus.textContent = "";
+  } catch (error) {
+    fillSelect(fitmentModel, "Base temporariamente indisponível", []);
+    fitmentStatus.textContent = "Não foi possível carregar os modelos agora. Tente novamente ou fale com a Franco.";
+  }
 }
 function refreshFitmentYears() {
-  const years = [...new Set(vehicleFitments.filter(item => item.make === fitmentMake.value && item.model === fitmentModel.value).map(item => item.year))]
-    .sort((a, b) => b - a).map(String);
-  fillSelect(fitmentYear, "Selecione o ano", years);
-  fitmentVersionWrap.hidden = true;
-  fitmentVersion.disabled = true;
-  fitmentResults.hidden = true;
-  fitmentStatus.textContent = "";
-}
-function refreshFitmentVersions() {
-  const entries = selectedFitments();
-  const distinctOptions = entries.length > 1;
-  fitmentVersionWrap.hidden = !distinctOptions;
-  fitmentVersion.required = distinctOptions;
-  fitmentVersion.disabled = !distinctOptions;
-  if (distinctOptions) {
-    fitmentVersion.innerHTML = `<option value="">Escolha a versão ou o aro</option>${entries.map((entry, index) => `<option value="${index}">${escapeHtml(`${entry.version} — ${entry.size}`)}</option>`).join("")}`;
-  } else {
-    fillSelect(fitmentVersion, "Escolha a versão ou o aro", []);
+  ++fitmentRequestId;
+  const make = fitmentMake.value;
+  const model = fitmentModel.value;
+  resetFitmentResults();
+  if (!make || !model) {
+    fillSelect(fitmentYear, "Selecione o ano", []);
+    return;
   }
-  fitmentResults.hidden = true;
-  fitmentStatus.textContent = "";
+  const indexedModel = fitmentCatalogIndex?.brands[make]?.models.find(item => item.name === model);
+  const catalogYears = indexedModel?.years || [];
+  const savedYears = vehicleFitments.filter(item => item.make === make && item.model === model).map(item => Number(item.year));
+  const years = [...new Set([...catalogYears, ...savedYears])].sort((a, b) => b - a).map(String);
+  fillSelect(fitmentYear, "Selecione o ano", years);
+}
+async function refreshFitmentVersions() {
+  const requestId = ++fitmentRequestId;
+  const make = fitmentMake.value;
+  const model = fitmentModel.value;
+  const year = fitmentYear.value;
+  resetFitmentResults();
+  if (!make || !model || !year) return;
+  fitmentStatus.textContent = "Carregando medidas…";
+  try {
+    const catalogEntries = await loadFitmentCatalogMake(make);
+    if (requestId !== fitmentRequestId || make !== fitmentMake.value || model !== fitmentModel.value || year !== fitmentYear.value) return;
+    const savedEntries = vehicleFitments.filter(item => item.make === make && item.model === model && String(item.year) === year);
+    const selectedEntries = [
+      ...savedEntries,
+      ...catalogEntries.filter(item => item.model === model && String(item.year) === year),
+    ];
+    const byConfiguration = new Map();
+    for (const entry of selectedEntries) {
+      const key = [entry.make, entry.model, entry.year, entry.version, entry.size, entry.rearSize || ""].join("|").toLocaleLowerCase("pt-BR");
+      const previous = byConfiguration.get(key);
+      if (!previous || (entry.fitmentType === "original" && previous.fitmentType !== "original")) byConfiguration.set(key, entry);
+    }
+    currentFitmentEntries = [...byConfiguration.values()];
+    if (!currentFitmentEntries.length) {
+      fitmentStatus.textContent = "Não encontramos essa combinação na base. Fale com a Franco para confirmar a medida.";
+      return;
+    }
+    const distinctOptions = currentFitmentEntries.length > 1;
+    fitmentVersionWrap.hidden = !distinctOptions;
+    fitmentVersion.required = distinctOptions;
+    fitmentVersion.disabled = !distinctOptions;
+    fitmentSubmitButton.disabled = false;
+    if (distinctOptions) {
+      const options = currentFitmentEntries.map((entry, index) => {
+        const axes = entry.rearSize ? ` — dianteira ${entry.size}, traseira ${entry.rearSize}` : ` — ${entry.size}`;
+        return `<option value="${index}">${escapeHtml(`${entry.version}${axes}`)}</option>`;
+      });
+      fitmentVersion.innerHTML = `<option value="">Escolha a versão ou o aro</option>${options.join("")}`;
+    } else {
+      fillSelect(fitmentVersion, "Escolha a versão ou o aro", []);
+    }
+    fitmentStatus.textContent = "";
+  } catch (error) {
+    currentFitmentEntries = [];
+    fitmentStatus.textContent = "Não foi possível carregar as medidas agora. Tente novamente ou fale com a Franco.";
+  }
 }
 
 if (fitmentForm && vehicleFitments.length) {
-  const makes = [...new Set(vehicleFitments.map(item => item.make))].sort((a, b) => a.localeCompare(b, "pt-BR"));
-  fillSelect(fitmentMake, "Selecione a montadora", makes);
-  fitmentMake.addEventListener("change", refreshFitmentModels);
+  fillSelect(fitmentMake, "Selecione a montadora", [...new Set([...catalogMakes, ...vehicleFitments.map(item => item.make)])].sort((a, b) => a.localeCompare(b, "pt-BR")));
+  fitmentSubmitButton.disabled = true;
+  fitmentMake.addEventListener("change", () => { void refreshFitmentModels(); });
   fitmentModel.addEventListener("change", refreshFitmentYears);
-  fitmentYear.addEventListener("change", refreshFitmentVersions);
+  fitmentYear.addEventListener("change", () => { void refreshFitmentVersions(); });
   // Permite arrastar os resultados com mouse ou dedo, mantendo o scroll vertical da página.
   let fitmentDrag = null;
   let suppressFitmentClick = false;
@@ -370,14 +475,22 @@ if (fitmentForm && vehicleFitments.length) {
       }
       selected = [entries[optionIndex]];
     }
-
     const fitment = selected[0];
     const vehicleName = `${fitment.make} ${fitment.model} ${fitment.year}`;
-    const measureLabel = fitment.fitmentType === "optional-factory" ? "OPÇÃO DE FÁBRICA" : "MEDIDA ORIGINAL DE FÁBRICA";
-    fitmentResultHeading.innerHTML = `<div><p class="eyebrow dark"><span></span> MEDIDA ENCONTRADA</p><h3>${escapeHtml(vehicleName)}</h3><p class="fitment-version-label">${escapeHtml(fitment.version)}</p></div><div class="fitment-measure"><span>${measureLabel}</span><strong>${escapeHtml(fitment.size)}</strong></div><a class="fitment-source" href="${escapeHtml(fitment.sourceUrl)}" target="_blank" rel="noopener">Fonte: ${escapeHtml(fitment.sourceLabel)} ↗</a>`;
+    const isVerifiedOriginal = fitment.fitmentType === "original";
+    const measureLabel = fitment.fitmentType === "optional-factory" ? "OPÇÃO DE FÁBRICA" : isVerifiedOriginal ? "MEDIDA ORIGINAL DE FÁBRICA" : "MEDIDA DE REFERÊNCIA · CATÁLOGO DE REPOSIÇÃO";
+    const measureDetail = fitment.rearSize ? `Dianteira ${fitment.size} · Traseira ${fitment.rearSize}` : "";
+    const confidenceNote = isVerifiedOriginal
+      ? "Medida indicada em manual do fabricante. Confirme a configuração e a etiqueta do veículo."
+      : fitment.fitmentType === "optional-factory"
+        ? "Opção listada para esta configuração. Confirme aro e versão no veículo."
+        : "Aplicação listada em catálogo de reposição; confirme a medida na etiqueta do veículo ou com a equipe.";
+    const axisMessage = fitment.rearSize ? `dianteira ${fitment.size} e traseira ${fitment.rearSize}` : fitment.size;
+    fitmentResultHeading.innerHTML = `<div><p class="eyebrow dark"><span></span> MEDIDA ENCONTRADA</p><h3>${escapeHtml(vehicleName)}</h3><p class="fitment-version-label">${escapeHtml(fitment.version)}</p></div><div class="fitment-measure"><span>${measureLabel}</span><strong>${escapeHtml(fitment.size)}</strong>${measureDetail ? `<small class="fitment-measure-axes">${escapeHtml(measureDetail)}</small>` : ""}</div><p class="fitment-result-note">${confidenceNote}</p><a class="fitment-source" href="${escapeHtml(safeSourceUrl(fitment.sourceUrl))}" target="_blank" rel="noopener">Fonte: ${escapeHtml(fitment.sourceLabel || "Base de referência")} ↗</a>`;
     fitmentProductList.innerHTML = finderTireProducts.map(({ number, image, name, finderLabel, price }) => {
-      const message = `Olá! Tenho um ${vehicleName}, versão ${fitment.version}. No localizador encontrei a medida ${fitment.size}. Gostaria de consultar a opção ${finderLabel}, modelo ${number}, preço e disponibilidade.`;
-      return `<article class="product-card"><div class="product-image"><img src="${escapeHtml(image)}" alt="${escapeHtml(name)}" width="640" height="640" loading="lazy" decoding="async"><span>MODELO ${number}</span></div><div class="product-body"><span class="product-measure">${escapeHtml(fitment.size)}</span><small class="finder-product-label">${escapeHtml(finderLabel)}</small><h3>${escapeHtml(name)}</h3><p>Consulte compatibilidade e disponibilidade para o seu veículo.</p><div class="product-price"><span>PREÇO</span><b>${price ?? "A confirmar"}</b></div><a class="button product-cta" data-wa="${escapeHtml(message)}" href="#contato">Consultar no WhatsApp <span>↗</span></a></div></article>`;
+      const message = `Olá! Tenho um ${vehicleName}, versão ${fitment.version}. No localizador encontrei a medida ${axisMessage} (${isVerifiedOriginal ? "confirmada em manual" : "referência de catálogo a confirmar"}). Gostaria de consultar a opção ${finderLabel}, modelo ${number}, preço e disponibilidade.`;
+      const productMeasure = fitment.rearSize ? `${fitment.size} / ${fitment.rearSize}` : fitment.size;
+      return `<article class="product-card"><div class="product-image"><img src="${escapeHtml(image)}" alt="${escapeHtml(name)}" width="640" height="640" loading="lazy" decoding="async"><span>MODELO ${number}</span></div><div class="product-body"><span class="product-measure">${escapeHtml(productMeasure)}</span><small class="finder-product-label">${escapeHtml(finderLabel)}</small><h3>${escapeHtml(name)}</h3><p>Consulte preço, compatibilidade e disponibilidade com a equipe.</p><div class="product-price"><span>PREÇO</span><b>${price ?? "A confirmar"}</b></div><a class="button product-cta" data-wa="${escapeHtml(message)}" href="#contato">Consultar no WhatsApp <span>↗</span></a></div></article>`;
     }).join("");
     bindWhatsAppLinks(fitmentProductList);
     fitmentResults.hidden = false;
