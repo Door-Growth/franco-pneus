@@ -23,7 +23,7 @@ const reviewList = document.querySelector("#google-review-list");
 if (reviewList) {
   reviewList.innerHTML = googleReviews.map(([name, date, text, photo]) => `
     <article class="testimonial-card testimonial-slot reveal">
-      <div class="google-review-meta"><img class="review-author-photo" src="assets/reviews/${photo}" alt="${name === "Auto escola NSA" ? "Avatar institucional" : photo.startsWith("user-") ? "Imagem fornecida pelo cliente" : "Foto ilustrativa"}: ${name}" width="40" height="40" loading="lazy" decoding="async"/><div class="google-review-author"><b>${name}</b><small>${date} · ${name === "Auto escola NSA" ? "perfil institucional" : photo.startsWith("user-") ? "imagem fornecida" : "foto ilustrativa"}</small></div><span class="google-review-brand" aria-label="Google">G</span></div>
+      <div class="google-review-meta"><img class="review-author-photo" src="assets/reviews/${photo}?v=20261002-1" alt="${name === "Auto escola NSA" ? "Avatar institucional" : photo.startsWith("user-") ? "Imagem fornecida pelo cliente" : "Foto ilustrativa"}: ${name}" width="40" height="40" loading="lazy" decoding="async"/><div class="google-review-author"><b>${name}</b><small>${date} · ${name === "Auto escola NSA" ? "perfil institucional" : photo.startsWith("user-") ? "imagem fornecida" : "foto ilustrativa"}</small></div><span class="google-review-brand" aria-label="Google">G</span></div>
       <div class="testimonial-rating-placeholder" aria-label="5 de 5 estrelas">★★★★★ <small>5,0</small></div>
       <p>“${text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;") }”</p>
       <div class="review-source">Avaliação pública · Franco Pneus e Motores</div>
@@ -232,7 +232,7 @@ list.querySelectorAll(".service-tile").forEach(tile => {
 });
 
 const waPhone = business.whatsapp.replace(/\D/g, "");
-const waButtonMarkup = `<span class="wa-icon wa-image-icon" aria-hidden="true"><img src="assets/whatsapp-logo.webp?v=20261001-1" alt="" width="256" height="256" decoding="async"></span><span class="wa-copy"><strong>Orçamento no WhatsApp</strong><small>RESPOSTA RÁPIDA E SEM COMPROMISSO</small></span>`;
+const waButtonMarkup = `<span class="wa-icon wa-image-icon" aria-hidden="true"><img src="assets/whatsapp-logo.webp?v=20261002-1" alt="" width="128" height="128" decoding="async"></span><span class="wa-copy"><strong>Orçamento no WhatsApp</strong><small>RESPOSTA RÁPIDA E SEM COMPROMISSO</small></span>`;
 function bindWhatsAppLinks(root = document) {
   root.querySelectorAll("[data-wa]").forEach(link => {
     const message = link.dataset.wa;
