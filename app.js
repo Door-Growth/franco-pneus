@@ -1,4 +1,4 @@
-import business, { whatsappLink } from "./config.js?v=20261001-1";
+import business, { whatsappLink } from "./config.js?v=20261001-2";
 import { vehicleFitments } from "./data/vehicle-fitments.js?v=20261001";
 import { finderTireProducts, tireProducts } from "./data/tire-products.js?v=20261001";
 
