@@ -272,6 +272,9 @@ function fillSelect(select, placeholder, values) {
 }
 
 const catalogMakes = ["AGRALE","ALFA ROMEO","ASIA","ASTON MARTIN","AUDI","BENTLEY","BMW","BYD","CADILLAC","CAOA CHANGAN","CAOA CHERY","CAOA EXEED","CHERY","CHEVROLET","CHRYSLER","CITROEN","CROSS LANDER","DAEWOO","DAIHATSU","DENZA","DODGE","DONGFENG","DS","FERRARI","FIAT","FORD","GAC","GEELY","GREAT WALL","HONDA","HYUNDAI","IVECO","JAC","JAECOO","JAGUAR","JEEP","JETOUR","KIA","LAMBORGHINI","LAND ROVER","LEAPMOTOR","LEXUS","LIFAN","MAHINDRA","MASERATI","MAZDA","MCLAREN","MERCEDES","MG","MINI","MITSUBISHI","NETA","NISSAN","OMODA","PEUGEOT","PORSCHE","RAM","RENAULT","RIDDARA","ROLLS ROYCE","SEAT","SERES","SSANGYONG","SUBARU","SUZUKI","TAC","TOYOTA","TROLLER","VOLKSWAGEN","VOLVO","ZEEKR"];
+function normalizeCatalogMake(value) {
+  return String(value || "").trim().toLocaleUpperCase("pt-BR");
+}
 let fitmentCatalogIndex = null;
 let fitmentCatalogRecords = new Map();
 let fitmentRequestId = 0;
@@ -286,7 +289,7 @@ async function fetchGzipJson(path) {
 }
 async function loadFitmentCatalogIndex() {
   if (fitmentCatalogIndex) return fitmentCatalogIndex;
-  fitmentCatalogIndex = await fetchGzipJson("./data/vehicle-catalog-index.json.gz?v=20261002-1");
+  fitmentCatalogIndex = await fetchGzipJson("./data/vehicle-catalog-index.json.gz?v=20261002-2");
   return fitmentCatalogIndex;
 }
 async function loadFitmentCatalogMake(make) {
@@ -335,7 +338,7 @@ async function refreshFitmentModels() {
     const index = await loadFitmentCatalogIndex();
     if (requestId !== fitmentRequestId || make !== fitmentMake.value) return;
     const catalogModels = (index.brands[make]?.models || []).map(item => item.name);
-    const savedModels = vehicleFitments.filter(item => item.make === make).map(item => item.model);
+    const savedModels = vehicleFitments.filter(item => normalizeCatalogMake(item.make) === make).map(item => item.model);
     const models = [...new Set([...catalogModels, ...savedModels])].sort((a, b) => a.localeCompare(b, "pt-BR"));
     fillSelect(fitmentModel, "Selecione o modelo", models);
     fitmentStatus.textContent = "";
@@ -355,7 +358,7 @@ function refreshFitmentYears() {
   }
   const indexedModel = fitmentCatalogIndex?.brands[make]?.models.find(item => item.name === model);
   const catalogYears = indexedModel?.years || [];
-  const savedYears = vehicleFitments.filter(item => item.make === make && item.model === model).map(item => Number(item.year));
+  const savedYears = vehicleFitments.filter(item => normalizeCatalogMake(item.make) === make && item.model === model).map(item => Number(item.year));
   const years = [...new Set([...catalogYears, ...savedYears])].sort((a, b) => b - a).map(String);
   fillSelect(fitmentYear, "Selecione o ano", years);
 }
@@ -370,14 +373,14 @@ async function refreshFitmentVersions() {
   try {
     const catalogEntries = await loadFitmentCatalogMake(make);
     if (requestId !== fitmentRequestId || make !== fitmentMake.value || model !== fitmentModel.value || year !== fitmentYear.value) return;
-    const savedEntries = vehicleFitments.filter(item => item.make === make && item.model === model && String(item.year) === year);
+    const savedEntries = vehicleFitments.filter(item => normalizeCatalogMake(item.make) === make && item.model === model && String(item.year) === year);
     const selectedEntries = [
       ...savedEntries,
       ...catalogEntries.filter(item => item.model === model && String(item.year) === year),
     ];
     const byConfiguration = new Map();
     for (const entry of selectedEntries) {
-      const key = [entry.make, entry.model, entry.year, entry.version, entry.size, entry.rearSize || ""].join("|").toLocaleLowerCase("pt-BR");
+      const key = [normalizeCatalogMake(entry.make), entry.model, entry.year, entry.version, entry.size, entry.rearSize || ""].join("|").toLocaleLowerCase("pt-BR");
       const previous = byConfiguration.get(key);
       if (!previous || (entry.fitmentType === "original" && previous.fitmentType !== "original")) byConfiguration.set(key, entry);
     }
@@ -408,7 +411,7 @@ async function refreshFitmentVersions() {
 }
 
 if (fitmentForm && vehicleFitments.length) {
-  fillSelect(fitmentMake, "Selecione a montadora", [...new Set([...catalogMakes, ...vehicleFitments.map(item => item.make)])].sort((a, b) => a.localeCompare(b, "pt-BR")));
+  fillSelect(fitmentMake, "Selecione a montadora", [...new Set([...catalogMakes, ...vehicleFitments.map(item => normalizeCatalogMake(item.make))])].sort((a, b) => a.localeCompare(b, "pt-BR")));
   fitmentSubmitButton.disabled = true;
   fitmentMake.addEventListener("change", () => { void refreshFitmentModels(); });
   fitmentModel.addEventListener("change", refreshFitmentYears);
