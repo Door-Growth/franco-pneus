@@ -1,7 +1,7 @@
 const business = {
   name: "Franco Pneus e Motores",
-  whatsapp: "5511940691579",
-  phoneDisplay: "+55 (11) 94069-1579",
+  whatsapp: "5511946317201",
+  phoneDisplay: "+55 (11) 94631-7201",
   address: "Av. Ten. Marques, 8000 — Chácara do Solar II (Fazendinha), Santana de Parnaíba — SP, 06530-001",
   hours: "", // PENDENTE
   instagram: "https://www.instagram.com/francocarservice/",

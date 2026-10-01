@@ -1,4 +1,4 @@
-import business, { whatsappLink } from "./config.js?v=20261001";
+import business, { whatsappLink } from "./config.js?v=20261001-1";
 import { vehicleFitments } from "./data/vehicle-fitments.js?v=20261001";
 import { finderTireProducts, tireProducts } from "./data/tire-products.js?v=20261001";
 
@@ -232,7 +232,7 @@ list.querySelectorAll(".service-tile").forEach(tile => {
 });
 
 const waPhone = business.whatsapp.replace(/\D/g, "");
-const waButtonMarkup = `<span class="wa-icon wa-image-icon" aria-hidden="true"><img src="assets/whatsapp-logo.png?v=20261001" alt="" width="256" height="256" decoding="async"></span><span class="wa-copy"><strong>Orçamento no WhatsApp</strong><small>RESPOSTA RÁPIDA E SEM COMPROMISSO</small></span>`;
+const waButtonMarkup = `<span class="wa-icon wa-image-icon" aria-hidden="true"><img src="assets/whatsapp-logo.webp?v=20261001-1" alt="" width="256" height="256" decoding="async"></span><span class="wa-copy"><strong>Orçamento no WhatsApp</strong><small>RESPOSTA RÁPIDA E SEM COMPROMISSO</small></span>`;
 function bindWhatsAppLinks(root = document) {
   root.querySelectorAll("[data-wa]").forEach(link => {
     const message = link.dataset.wa;
@@ -397,7 +397,7 @@ if (fitmentForm && vehicleFitments.length) {
 
 const floatingWhatsApp = document.querySelector(".whatsapp-float");
 if (floatingWhatsApp) {
-  floatingWhatsApp.innerHTML = `<span class="wa-icon wa-image-icon" aria-hidden="true"><img src="assets/whatsapp-logo.png?v=20261001" alt="" width="256" height="256" decoding="async"></span>`;
+  floatingWhatsApp.innerHTML = `<span class="wa-icon wa-image-icon" aria-hidden="true"><img src="assets/whatsapp-logo.webp?v=20261001-1" alt="" width="256" height="256" decoding="async"></span>`;
   floatingWhatsApp.setAttribute("aria-label", "Chamar no WhatsApp");
 }
 
