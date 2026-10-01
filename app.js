@@ -308,6 +308,43 @@ if (fitmentForm && vehicleFitments.length) {
   fitmentMake.addEventListener("change", refreshFitmentModels);
   fitmentModel.addEventListener("change", refreshFitmentYears);
   fitmentYear.addEventListener("change", refreshFitmentVersions);
+  // Permite arrastar os resultados com mouse ou dedo, mantendo o scroll vertical da página.
+  let fitmentDrag = null;
+  let suppressFitmentClick = false;
+  fitmentProductList.addEventListener("pointerdown", event => {
+    if (!event.isPrimary || (event.pointerType === "mouse" && event.button !== 0) || event.target.closest("a, button")) return;
+    fitmentDrag = { pointerId: event.pointerId, x: event.clientX, scrollLeft: fitmentProductList.scrollLeft, moved: false };
+    suppressFitmentClick = false;
+    fitmentProductList.classList.add("is-dragging");
+    fitmentProductList.setPointerCapture(event.pointerId);
+  });
+  fitmentProductList.addEventListener("pointermove", event => {
+    if (!fitmentDrag || fitmentDrag.pointerId !== event.pointerId) return;
+    const distance = event.clientX - fitmentDrag.x;
+    if (Math.abs(distance) > 5) {
+      fitmentDrag.moved = true;
+      event.preventDefault();
+    }
+    fitmentProductList.scrollLeft = fitmentDrag.scrollLeft - distance;
+  });
+  const finishFitmentDrag = event => {
+    if (!fitmentDrag || (event?.pointerId != null && fitmentDrag.pointerId !== event.pointerId)) return;
+    const moved = fitmentDrag.moved;
+    fitmentDrag = null;
+    fitmentProductList.classList.remove("is-dragging");
+    if (moved) {
+      suppressFitmentClick = true;
+      window.setTimeout(() => { suppressFitmentClick = false; }, 0);
+    }
+  };
+  fitmentProductList.addEventListener("pointerup", finishFitmentDrag);
+  fitmentProductList.addEventListener("pointercancel", finishFitmentDrag);
+  fitmentProductList.addEventListener("click", event => {
+    if (!suppressFitmentClick) return;
+    event.preventDefault();
+    event.stopPropagation();
+  }, true);
+
   const scrollFitmentProducts = direction => {
     const card = fitmentProductList.querySelector(".product-card");
     if (card) fitmentProductList.scrollBy({ left: direction * (card.getBoundingClientRect().width + 14), behavior: "smooth" });
