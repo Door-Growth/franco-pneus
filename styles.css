@@ -101,7 +101,7 @@
 @media(max-width:620px){.hero-bottom{left:18px;right:18px}.hero-controls{gap:7px}.hero-arrow{width:28px;height:28px}.hero-dots{gap:5px}.hero-dot{width:6px;height:6px}.hero-dot.is-active{width:17px}.intro-photo,.location-photo{border-radius:14px}.service-tile,.social-tile{border-radius:11px}.testimonial-grid{grid-template-columns:1fr;gap:9px}.testimonial-card,.testimonial-card:last-child{grid-column:auto;min-height:174px;padding:18px}.testimonial-card>p{min-height:unset}.testimonial-cta{align-items:flex-start;flex-direction:column;gap:12px}.faq-list summary{min-height:52px;padding:9px 10px 9px 12px}.faq-list summary .faq-question{font-size:10px}.faq-list details p{font-size:9px}.faq-heading-rule{margin-top:15px}}
 @media(max-width:620px){.hero{padding-top:120px}.hero-image{background-size:100% auto;background-position:center 76px}}
 @media(prefers-reduced-motion:reduce){.hero-image,.whatsapp-float::before{transition:none;animation:none!important}.hero-arrow:hover,.faq-list summary:hover{transform:none}}
-@keyframes heroKenBurns{from{transform:scale(1)}to{transform:scale(1.05)}}
+@keyframes heroKenBurns{from{transform:scale(1)}to{transform:scale(1.07)}}
 
 /* Menu compacto com transparência ao rolar */
 .topline{width:min(1280px,calc(100% - 10%));height:26px;margin:8px auto 0;padding:0 20px;border:1px solid #c7953933;border-radius:999px;background:#171716;color:#c7c3b8}
