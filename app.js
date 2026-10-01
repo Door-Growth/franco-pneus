@@ -275,6 +275,9 @@ const catalogMakes = ["AGRALE","ALFA ROMEO","ASIA","ASTON MARTIN","AUDI","BENTLE
 function normalizeCatalogMake(value) {
   return String(value || "").trim().toLocaleUpperCase("pt-BR");
 }
+function normalizeCatalogModel(value) {
+  return String(value || "").trim().toLocaleUpperCase("pt-BR");
+}
 let fitmentCatalogIndex = null;
 let fitmentCatalogRecords = new Map();
 let fitmentRequestId = 0;
@@ -339,7 +342,7 @@ async function refreshFitmentModels() {
     if (requestId !== fitmentRequestId || make !== fitmentMake.value) return;
     const catalogModels = (index.brands[make]?.models || []).map(item => item.name);
     const savedModels = vehicleFitments.filter(item => normalizeCatalogMake(item.make) === make).map(item => item.model);
-    const models = [...new Set([...catalogModels, ...savedModels])].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    const models = [...new Map([...savedModels, ...catalogModels].map(model => [normalizeCatalogModel(model), model])).values()].sort((a, b) => a.localeCompare(b, "pt-BR"));
     fillSelect(fitmentModel, "Selecione o modelo", models);
     fitmentStatus.textContent = "";
   } catch (error) {
@@ -358,7 +361,7 @@ function refreshFitmentYears() {
   }
   const indexedModel = fitmentCatalogIndex?.brands[make]?.models.find(item => item.name === model);
   const catalogYears = indexedModel?.years || [];
-  const savedYears = vehicleFitments.filter(item => normalizeCatalogMake(item.make) === make && item.model === model).map(item => Number(item.year));
+  const savedYears = vehicleFitments.filter(item => normalizeCatalogMake(item.make) === make && normalizeCatalogModel(item.model) === normalizeCatalogModel(model)).map(item => Number(item.year));
   const years = [...new Set([...catalogYears, ...savedYears])].sort((a, b) => b - a).map(String);
   fillSelect(fitmentYear, "Selecione o ano", years);
 }
@@ -373,14 +376,14 @@ async function refreshFitmentVersions() {
   try {
     const catalogEntries = await loadFitmentCatalogMake(make);
     if (requestId !== fitmentRequestId || make !== fitmentMake.value || model !== fitmentModel.value || year !== fitmentYear.value) return;
-    const savedEntries = vehicleFitments.filter(item => normalizeCatalogMake(item.make) === make && item.model === model && String(item.year) === year);
+    const savedEntries = vehicleFitments.filter(item => normalizeCatalogMake(item.make) === make && normalizeCatalogModel(item.model) === normalizeCatalogModel(model) && String(item.year) === year);
     const selectedEntries = [
       ...savedEntries,
-      ...catalogEntries.filter(item => item.model === model && String(item.year) === year),
+      ...catalogEntries.filter(item => normalizeCatalogModel(item.model) === normalizeCatalogModel(model) && String(item.year) === year),
     ];
     const byConfiguration = new Map();
     for (const entry of selectedEntries) {
-      const key = [normalizeCatalogMake(entry.make), entry.model, entry.year, entry.version, entry.size, entry.rearSize || ""].join("|").toLocaleLowerCase("pt-BR");
+      const key = [normalizeCatalogMake(entry.make), normalizeCatalogModel(entry.model), entry.year, entry.version, entry.size, entry.rearSize || ""].join("|").toLocaleLowerCase("pt-BR");
       const previous = byConfiguration.get(key);
       if (!previous || (entry.fitmentType === "original" && previous.fitmentType !== "original")) byConfiguration.set(key, entry);
     }
