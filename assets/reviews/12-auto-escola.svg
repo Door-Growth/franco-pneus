@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Avatar institucional da Auto Escola NSA">
+  <circle cx="64" cy="64" r="64" fill="#e8f0fe"/>
+  <circle cx="64" cy="64" r="46" fill="#4285f4"/>
+  <path d="M34 67h60l-5-17a7 7 0 0 0-7-5H47a7 7 0 0 0-7 5l-6 17Zm4 7a6 6 0 1 0 12 0H78a6 6 0 1 0 12 0h4v10H34V74h4Z" fill="#fff"/>
+  <text x="64" y="108" fill="#1967d2" font-family="Arial,sans-serif" font-size="12" font-weight="700" text-anchor="middle">NSA</text>
+</svg>
