@@ -431,3 +431,5 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:3px solid #ffb
 @media(prefers-reduced-motion:reduce){
   .nav-links{transition:none}
 }
+
+@media(max-width:760px){body.menu-open .site-header{backdrop-filter:none;-webkit-backdrop-filter:none;background:#191918}}
